@@ -188,6 +188,30 @@ We train the latent action model on the collection of dataset comprising robot m
 
 ```bash
 torchrun --standalone --nnodes 1 --nproc-per-node 8 main.py fit \
+The RLDS TFRecord directory passed to `--data_root_dir` should contain the
+`bridge_oxe` dataset in the standard TFDS layout:
+
+```
+/path/to/bridge_v2_rlds/
+    bridge_oxe/
+        1.0.0/
+            dataset_info.json
+            bridge_oxe.tfrecord-00000-of-00005
+            bridge_oxe.tfrecord-00001-of-00005
+            ...
+```
+
+With the files arranged in this structure you can launch training as follows:
+
+```bash
+torchrun --nproc_per_node 8 vla-scripts/train.py \
+    --vla.type prism-dinosiglip-224px+mx-bridge \
+    --data_root_dir /path/to/bridge_v2_rlds \
+    --pretrain_vlm prism-dinosiglip-224px+7b \
+    --lam_path latent_action_model/logs/task_centric_lam_stage2/epoch=0-step=200000.ckpt \
+    --run_root_dir runs
+```
+
     --config config/lam-stage-1.yaml \
     2>&1 | tee lam-stage-1.log
 ```
