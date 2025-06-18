@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Tuple, Type
 
+from torchvision import transforms
+
 import random
 import numpy as np
 import torch
@@ -282,24 +284,55 @@ class RLDSBatchTransformLatentAction:
 @dataclass
 class RLDSBatchTransformVideo:
     image_transform: ImageTransform
+    augment: bool = False
+    brightness: float = 0.2
+    contrast: float = 0.2
+    noise_std: float = 0.02
+
+    def __post_init__(self):
+        self.jitter = transforms.ColorJitter(brightness=self.brightness, contrast=self.contrast)
+
+    def _apply_aug(self, img: Image.Image) -> Tensor:
+        if self.augment:
+            img = self.jitter(img)
+        tensor = self.image_transform(img)
+        if self.augment and self.noise_std > 0:
+            tensor = tensor + self.noise_std * torch.randn_like(tensor)
+        return tensor
 
     def __call__(self, rlds_batch: Dict[str, Any]) -> Dict[str, Any]:
         """Converts a RLDS batch to the format expected by the OpenVLA collator/models."""
         dataset_name, action = rlds_batch["dataset_name"], np.array(rlds_batch["action"])
-        
+
         lang = rlds_batch["task"]["language_instruction"].decode().lower()
 
-        img = Image.fromarray(rlds_batch["observation"]["image_primary"][0])#.copy()
-        initial_pixel_values = self.image_transform(img)
-        
-        # the frame interval is already tackled in RLDS dataloader
+        prev_img = Image.fromarray(rlds_batch["observation"]["image_primary"][0])
+        img = Image.fromarray(rlds_batch["observation"]["image_primary"][1])
         target_frame_index = -1
-        img_k = Image.fromarray(rlds_batch["observation"]["image_primary"][target_frame_index])#.copy()
-        # print(sum(np.array(img_k) - np.array(img)))
-        target_pixel_values= self.image_transform(img_k)
+        img_k = Image.fromarray(rlds_batch["observation"]["image_primary"][target_frame_index])
 
-        return dict(initial_pixel_values=initial_pixel_values, target_pixel_values=target_pixel_values, 
-                    task_instruction=lang, action=action, dataset_name=dataset_name)
+        prev_tensor = self.image_transform(prev_img)
+        curr_tensor = self.image_transform(img)
+        next_tensor = self.image_transform(img_k)
+
+        prev_aug = self._apply_aug(prev_img)
+        curr_aug = self._apply_aug(img)
+        next_aug = self._apply_aug(img_k)
+
+        video = torch.stack([curr_tensor, next_tensor], dim=0)
+        video_prev = torch.stack([prev_tensor, curr_tensor], dim=0)
+        video_aug = torch.stack([curr_aug, next_aug], dim=0)
+        video_prev_aug = torch.stack([prev_aug, curr_aug], dim=0)
+
+        return dict(
+            videos=video,
+            videos_prev=video_prev,
+            videos_aug=video_aug,
+            videos_prev_aug=video_prev_aug,
+            task_instruction=lang,
+            action=action,
+            dataset_name=dataset_name,
+        )
 
 
 

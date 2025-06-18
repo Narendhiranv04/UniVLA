@@ -280,29 +280,34 @@ class CollatorForLatentAction:
     pixel_values_dtype: torch.dtype = torch.float32
 
     def __call__(self, instances: Sequence[Dict[str, torch.Tensor]]) -> Dict[str, torch.Tensor]:
-        
+
         if "dataset_name" in instances[0]:
             dataset_names = [instance["dataset_name"] for instance in instances]
         else:
             dataset_names = None
 
-        initial_pixel_values = [instance["initial_pixel_values"] for instance in instances]
-        initial_pixel_values = torch.stack(initial_pixel_values)
-        
-        target_pixel_values = [instance["target_pixel_values"] for instance in instances]
-        target_pixel_values = torch.stack(target_pixel_values)
-        pixel_values = torch.stack([initial_pixel_values, target_pixel_values], dim=1)
+        videos = [instance["videos"] for instance in instances]
+        videos = torch.stack(videos)
 
+        videos_prev = [instance["videos_prev"] for instance in instances]
+        videos_prev = torch.stack(videos_prev)
+
+        videos_aug = [instance["videos_aug"] for instance in instances]
+        videos_aug = torch.stack(videos_aug)
+
+        videos_prev_aug = [instance["videos_prev_aug"] for instance in instances]
+        videos_prev_aug = torch.stack(videos_prev_aug)
 
         action = [torch.from_numpy(instance["action"]) for instance in instances]
         action = torch.stack(action)
 
-        # removing all punctuation in task instruction
         task_instruction = [re.sub('[{}]'.format(string.punctuation),"",instance["task_instruction"]) for instance in instances]
 
-
         output = dict(
-            videos=pixel_values,
+            videos=videos,
+            videos_prev=videos_prev,
+            videos_aug=videos_aug,
+            videos_prev_aug=videos_prev_aug,
             task_instruction=task_instruction,
             action=action,
         )

@@ -198,7 +198,8 @@ class LightningOpenX(LightningDataset):
         self.worker_init_fn = set_global_seed(42, get_worker_init_fn=True)
 
         self.batch_transform = RLDSBatchTransformVideo(
-            image_transform=transforms.ToTensor() 
+            image_transform=transforms.ToTensor(),
+            augment=self.image_aug,
         )
         self.collate_fn = CollatorForLatentAction()
 

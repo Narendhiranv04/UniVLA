@@ -5,9 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import piq
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import wandb
 from PIL import Image
-from einops import rearrange
+from einops import rearrange, repeat
 from lightning import LightningModule
 from torch import Tensor
 from torch.optim import AdamW, Optimizer
@@ -18,6 +20,15 @@ OptimizerCallable = Callable[[Iterable], Optimizer]
 from genie.modules import UncontrolledDINOLatentActionModel, ControllableDINOLatentActionModel
 import logging
 logging.basicConfig(format='%(message)s', level=logging.INFO)
+
+
+def info_nce_loss(query: Tensor, key: Tensor, temperature: float = 0.07) -> Tensor:
+    """Symmetric InfoNCE loss for a batch of positive pairs."""
+    logits = (query @ key.T) / temperature
+    labels = torch.arange(query.size(0), device=query.device)
+    loss_qk = F.cross_entropy(logits, labels)
+    loss_kq = F.cross_entropy(logits.T, labels)
+    return 0.5 * (loss_qk + loss_kq)
 
 
 
@@ -46,6 +57,7 @@ class DINO_LAM(LightningModule):
             optimizer: OptimizerCallable = AdamW,
             make_data_pair: bool = False,
             stage_one_ckpt: str = None,
+            contrastive_weight: float = 0.1,
     ) -> None:
         super(DINO_LAM, self).__init__()
         assert stage in ['stage-1', 'stage-2']
@@ -79,6 +91,13 @@ class DINO_LAM(LightningModule):
         self.log_path = log_path
         self.optimizer = optimizer
         self.make_data_pair = make_data_pair
+        self.contrastive_weight = contrastive_weight
+
+        self.proj = nn.Sequential(
+            nn.Linear(lam_latent_dim, lam_latent_dim),
+            nn.ReLU(),
+            nn.Linear(lam_latent_dim, lam_latent_dim),
+        )
 
         self.save_hyperparameters()
 
@@ -93,12 +112,37 @@ class DINO_LAM(LightningModule):
         outputs = self.lam(batch)
         gt_future_frames = outputs["target"]
 
+        lang_embed, attention_mask = self.lam.encode_text(batch["task_instruction"])
+        lang_embed = self.lam.lang_proj(lang_embed)
+        B, T = batch["videos"].shape[:2]
+        attn_mask = torch.cat([
+            torch.ones((B, self.lam.num_codes + (gt_future_frames.shape[-2]))).to(self.device),
+            attention_mask,
+        ], dim=-1)
+        rep_lang = repeat(lang_embed, 'b l d -> b T l d', T=T)
+        mask_rep = attn_mask.repeat(T, 1)
+
+        z_aug = self.lam.vq_encode(batch["videos_aug"], rep_lang, mask_rep)["z_q"]
+        z_prev = self.lam.vq_encode(batch["videos_prev"], rep_lang, mask_rep)["z_q"]
+        z_prev_aug = self.lam.vq_encode(batch["videos_prev_aug"], rep_lang, mask_rep)["z_q"]
+
+        emb_orig = self.proj(outputs["z_q"]).reshape(B, -1)
+        emb_aug = self.proj(z_aug).reshape(B, -1)
+        emb_prev = self.proj(z_prev).reshape(B, -1)
+        emb_prev_aug = self.proj(z_prev_aug).reshape(B, -1)
+
+        contrastive_loss = (
+            info_nce_loss(emb_orig, emb_aug)
+            + info_nce_loss(emb_orig, emb_prev)
+            + info_nce_loss(emb_orig, emb_prev_aug)
+        ) / 3.0
+
         # Compute loss
         mse_loss = ((gt_future_frames - outputs["recon"]) ** 2).mean()
         q_loss = ((outputs["emb"].detach() - outputs["z"]) ** 2).mean()
         commit_loss = ((outputs["emb"] - outputs["z"].detach()) ** 2).mean()
 
-        loss = mse_loss + q_loss + self.vq_beta * commit_loss
+        loss = mse_loss + q_loss + self.vq_beta * commit_loss + self.contrastive_weight * contrastive_loss
         
         # Optimize uncontrollable queries in stage-2 (the codebook is frozen though)
         if "z_q_uncontrol" in outputs.keys():
@@ -116,6 +160,7 @@ class DINO_LAM(LightningModule):
             ("mse_loss", mse_loss),
             ("q_loss", q_loss),
             ("commit_loss", commit_loss),
+            ("contrastive_loss", contrastive_loss),
             ("code_usage", code_usage),
         )
 
@@ -131,6 +176,7 @@ class DINO_LAM(LightningModule):
                 ("commit_loss", commit_loss),
                 ("q_loss_uncontrol", q_loss_uncontrol),
                 ("commit_loss_uncontrol", commit_loss_uncontrol),
+                ("contrastive_loss", contrastive_loss),
                 ("code_usage", code_usage),
                 ("code_usage_uncontrol", uncontrol_code_usage),
             )
