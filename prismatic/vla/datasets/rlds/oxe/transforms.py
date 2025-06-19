@@ -15,7 +15,7 @@ Transforms adopt the following structure:
     }
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Mapping
 
 import tensorflow as tf
 
@@ -36,13 +36,13 @@ def bridge_oxe_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     for key, value in trajectory.items():
         if key == "traj_metadata":
             continue
-        if key in ["observation", "action"] and isinstance(value, dict):
+        if key in ["observation", "action"] and isinstance(value, Mapping):
             result[key] = {k: v[1:] for k, v in value.items()}
         else:
             result[key] = value[1:]
 
     action_val = result.get("action")
-    if isinstance(action_val, dict) and {
+    if isinstance(action_val, Mapping) and {
         "world_vector",
         "rotation_delta",
         "open_gripper",
