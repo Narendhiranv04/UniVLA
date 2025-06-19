@@ -71,12 +71,16 @@ def load(
             with overwatch.local_zero_first():
                 model_id = GLOBAL_REGISTRY[model_id_or_path]["model_id"]
                 config_json = hf_hub_download(
-                    repo_id=HF_HUB_REPO, filename=f"{model_id}/config.json", cache_dir=cache_dir
+                    repo_id=HF_HUB_REPO,
+                    filename=f"{model_id}/config.json",
+                    cache_dir=cache_dir,
+                    token=hf_token,
                 )
                 checkpoint_pt = hf_hub_download(
                     repo_id=HF_HUB_REPO,
                     filename=f"{model_id}/checkpoints/latest-checkpoint.pt",
                     cache_dir=cache_dir,
+                    token=hf_token,
                 )
     else:
         if model_id_or_path not in GLOBAL_REGISTRY:
@@ -84,9 +88,17 @@ def load(
 
         overwatch.info(f"Downloading `{(model_id := GLOBAL_REGISTRY[model_id_or_path]['model_id'])} from HF Hub")
         with overwatch.local_zero_first():
-            config_json = hf_hub_download(repo_id=HF_HUB_REPO, filename=f"{model_id}/config.json", cache_dir=cache_dir)
+            config_json = hf_hub_download(
+                repo_id=HF_HUB_REPO,
+                filename=f"{model_id}/config.json",
+                cache_dir=cache_dir,
+                token=hf_token,
+            )
             checkpoint_pt = hf_hub_download(
-                repo_id=HF_HUB_REPO, filename=f"{model_id}/checkpoints/latest-checkpoint.pt", cache_dir=cache_dir
+                repo_id=HF_HUB_REPO,
+                filename=f"{model_id}/checkpoints/latest-checkpoint.pt",
+                cache_dir=cache_dir,
+                token=hf_token,
             )
 
     # Load Model Config from `config.json`
@@ -179,13 +191,22 @@ def load_vla(
         with overwatch.local_zero_first():
             relpath = Path(model_type) / model_id_or_path
             config_json = hf_hub_download(
-                repo_id=VLA_HF_HUB_REPO, filename=f"{(relpath / 'config.json')!s}", cache_dir=cache_dir
+                repo_id=VLA_HF_HUB_REPO,
+                filename=f"{(relpath / 'config.json')!s}",
+                cache_dir=cache_dir,
+                token=hf_token,
             )
             dataset_statistics_json = hf_hub_download(
-                repo_id=VLA_HF_HUB_REPO, filename=f"{(relpath / 'dataset_statistics.json')!s}", cache_dir=cache_dir
+                repo_id=VLA_HF_HUB_REPO,
+                filename=f"{(relpath / 'dataset_statistics.json')!s}",
+                cache_dir=cache_dir,
+                token=hf_token,
             )
             checkpoint_pt = hf_hub_download(
-                repo_id=VLA_HF_HUB_REPO, filename=f"{(relpath / 'checkpoints' / target_ckpt)!s}", cache_dir=cache_dir
+                repo_id=VLA_HF_HUB_REPO,
+                filename=f"{(relpath / 'checkpoints' / target_ckpt)!s}",
+                cache_dir=cache_dir,
+                token=hf_token,
             )
 
     # Load VLA Config (and corresponding base VLM `ModelConfig`) from `config.json`
