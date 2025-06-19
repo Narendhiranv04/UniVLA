@@ -36,10 +36,21 @@ def bridge_oxe_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     for key, value in trajectory.items():
         if key == "traj_metadata":
             continue
-        if key in ["observation", "action"]:
+        if key in ["observation", "action"] and isinstance(value, dict):
             result[key] = {k: v[1:] for k, v in value.items()}
         else:
             result[key] = value[1:]
+
+    if isinstance(result.get("action"), dict):
+        action_dict = result["action"]
+        result["action"] = tf.concat(
+            (
+                action_dict["world_vector"],
+                action_dict["rotation_delta"],
+                tf.cast(action_dict["open_gripper"][:, None], tf.float32),
+            ),
+            axis=-1,
+        )
 
     result["action"] = tf.concat(
         (
@@ -49,12 +60,11 @@ def bridge_oxe_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
         ),
         axis=-1,
     )
+
     result["language_instruction"] = result["observation"]["natural_language_instruction"]
     result = relabel_bridge_actions(result)
     result["observation"]["EEF_state"] = result["observation"]["state"][:, :6]
     result["observation"]["gripper_state"] = result["observation"]["state"][:, -1:]
-
-    print("bridge", result.keys())
     return result
 
 
@@ -402,9 +412,6 @@ def nyu_franka_play_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, A
         ),
         axis=-1,
     )
-
-    print('nyu', trajectory.keys())
-    print('nyu obs', trajectory["observation"].keys())
 
     # trajectory["language_instruction"] = tf.fill(
     #     tf.shape(trajectory["language_instruction"]), ""
@@ -853,8 +860,6 @@ def human_dataset_transform(sample: Dict[str, Any]) -> Dict[str, Any]:
     """
     # Extract the observation from the sample
     observation = sample["observation"]
-    print('ego4d', sample.keys())
-    print('ego4d obs', sample["observation"].keys())
     # print('sample["observation"]', sample["observation"]['image'].shape[0])
     # observation["state"] = tf.zeros((2, 7), dtype=tf.float32)
     
