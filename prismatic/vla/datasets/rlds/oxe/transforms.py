@@ -41,8 +41,13 @@ def bridge_oxe_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
         else:
             result[key] = value[1:]
 
-    if isinstance(result.get("action"), dict):
-        action_dict = result["action"]
+    action_val = result.get("action")
+    if isinstance(action_val, dict) and {
+        "world_vector",
+        "rotation_delta",
+        "open_gripper",
+    } <= action_val.keys():
+        action_dict = action_val
         result["action"] = tf.concat(
             (
                 action_dict["world_vector"],
@@ -51,6 +56,7 @@ def bridge_oxe_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
             ),
             axis=-1,
         )
+
 
     result["action"] = tf.concat(
         (
