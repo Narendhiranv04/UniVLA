@@ -58,7 +58,6 @@ def bridge_oxe_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     result = relabel_bridge_actions(result)
     result["observation"]["EEF_state"] = result["observation"]["state"][:, :6]
     result["observation"]["gripper_state"] = result["observation"]["state"][:, -1:]
-
     return result
 
 
