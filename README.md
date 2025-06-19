@@ -210,6 +210,11 @@ torchrun --standalone --nnodes 1 --nproc-per-node 8 main.py fit \
 
 - To initiate pre-training, please refer to the following scipt or simply run ```bash ./vla-scripts/train.sh```:
 
+    --hf_token <your_hf_token>  # required for gated models like LLaMA-2
+`--pretrain_vlm` may refer to a local directory containing `config.json` and
+`checkpoints/latest-checkpoint.pt` or to a registered model name from
+`prismatic.available_model_names()`.
+
 > [!NOTE]
 > For pretraining UniVLA only on BridgeV2 or Human (Ego4D) data, please modify ```vla.type``` to ```prism-dinosiglip-224px+mx-bridge(human)``` correspondingly. Detailed setups can be found in ```./prismatic/conf/vla.py```.
 
