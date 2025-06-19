@@ -235,7 +235,6 @@ torchrun --nproc_per_node 8 vla-scripts/train.py \
     --pretrain_vlm prism-dinosiglip-224px+7b \
     --lam_path latent_action_model/logs/task_centric_lam_stage2/epoch=0-step=200000.ckpt \
     --run_root_dir runs
-```
 
 ```bash
 ### Experiment on a 32-GPU cluster
