@@ -29,65 +29,58 @@ from prismatic.vla.datasets.rlds.utils.data_utils import (
 
 
 def bridge_oxe_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Applies to version of Bridge V2 in Open X-Embodiment mixture.
+    """Standardizes Bridge V2 trajectories from the Open X-Embodiment mixture."""
 
-    Note =>> In original Bridge V2 dataset, the first timestep has an all-zero action, so we remove it!
-    """
-    for key in trajectory.keys():
+    # Drop the first timestep across all fields except ``traj_metadata``.
+    result: Dict[str, Any] = {}
+    for key, value in trajectory.items():
         if key == "traj_metadata":
             continue
-        elif key in ["observation", "action"]:
-            for key2 in trajectory[key]:
-                trajectory[key][key2] = trajectory[key][key2][1:]
+        if key in ["observation", "action"]:
+            result[key] = {k: v[1:] for k, v in value.items()}
         else:
-            trajectory[key] = trajectory[key][1:]
+            result[key] = value[1:]
 
-    trajectory["action"] = tf.concat(
+    result["action"] = tf.concat(
         (
-            trajectory["action"]["world_vector"],
-            trajectory["action"]["rotation_delta"],
-            tf.cast(trajectory["action"]["open_gripper"][:, None], tf.float32),
+            result["action"]["world_vector"],
+            result["action"]["rotation_delta"],
+            tf.cast(result["action"]["open_gripper"][:, None], tf.float32),
         ),
         axis=-1,
     )
-    # print(trajectory.keys(), trajectory['observation'].keys())
-    trajectory["language_instruction"] = trajectory["observation"]["natural_language_instruction"]
-    trajectory = relabel_bridge_actions(trajectory)
-    trajectory["observation"]["EEF_state"] = trajectory["observation"]["state"][:, :6]
-    trajectory["observation"]["gripper_state"] = trajectory["observation"]["state"][:, -1:]
+    result["language_instruction"] = result["observation"]["natural_language_instruction"]
+    result = relabel_bridge_actions(result)
+    result["observation"]["EEF_state"] = result["observation"]["state"][:, :6]
+    result["observation"]["gripper_state"] = result["observation"]["state"][:, -1:]
 
-    print('bridge', trajectory.keys())
-    return trajectory
+    print("bridge", result.keys())
+    return result
 
 
 def bridge_orig_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Applies to original version of Bridge V2 from the official project website.
+    """Standardizes trajectories from the original Bridge V2 dataset."""
 
-    Note =>> In original Bridge V2 dataset, the first timestep has an all-zero action, so we remove it!
-    """
-    for key in trajectory.keys():
+    result: Dict[str, Any] = {}
+    for key, value in trajectory.items():
         if key == "traj_metadata":
             continue
-        elif key == "observation":
-            for key2 in trajectory[key]:
-                trajectory[key][key2] = trajectory[key][key2][1:]
+        if key == "observation":
+            result[key] = {k: v[1:] for k, v in value.items()}
         else:
-            trajectory[key] = trajectory[key][1:]
+            result[key] = value[1:]
 
-    trajectory["action"] = tf.concat(
+    result["action"] = tf.concat(
         [
-            trajectory["action"][:, :6],
-            binarize_gripper_actions(trajectory["action"][:, -1])[:, None],
+            result["action"][:, :6],
+            binarize_gripper_actions(result["action"][:, -1])[:, None],
         ],
         axis=1,
     )
-    # print(trajectory.keys(), trajectory['observation'].keys())
-    trajectory = relabel_bridge_actions(trajectory)
-    trajectory["observation"]["EEF_state"] = trajectory["observation"]["state"][:, :6]
-    trajectory["observation"]["gripper_state"] = trajectory["observation"]["state"][:, -1:]
-    return trajectory
+    result = relabel_bridge_actions(result)
+    result["observation"]["EEF_state"] = result["observation"]["state"][:, :6]
+    result["observation"]["gripper_state"] = result["observation"]["state"][:, -1:]
+    return result
 
 
 def ppgm_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
