@@ -236,12 +236,6 @@ torchrun --nproc_per_node 8 vla-scripts/train.py \
     --lam_path latent_action_model/logs/task_centric_lam_stage2/epoch=0-step=200000.ckpt \
     --run_root_dir runs
 ```
-=======
-The `--pretrain_vlm` argument can be either a local directory containing
-`config.json` and the checkpoint to load or a model name returned by
-`prismatic.available_model_names()`. When a model name (e.g.
-`prism-dinosiglip-224px+7b`) is specified, the weights will be automatically
-downloaded from the Hugging Face Hub.
 
 ```bash
 ### Experiment on a 32-GPU cluster
@@ -338,7 +332,7 @@ Start evaluation on CALVIN:
 ```bash
 # Mutli-GPU evaluation is supported
 torchrun --standalone --nnodes 1 --nproc-per-node 8 experiments/robot/calvin/run_calvin_eval_ddp.py \
-    --calvin_root /path/to/yout/calvin_root_path \
+    --calvin_root /path/to/your/calvin_root_path \
     --action_decoder_path /path/to/your/action_decoder_path.pt \
     --pretrained_checkpoint /path/to/your/calvin_finetuned_univla \
     --seed 7
