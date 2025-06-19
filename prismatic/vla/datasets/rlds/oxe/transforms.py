@@ -46,14 +46,12 @@ def bridge_oxe_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
         "world_vector",
         "rotation_delta",
         "open_gripper",
-    } <= action_val.keys():
-        action_dict = action_val
+    }.issubset(action_val.keys()):
+        world_vector = action_val["world_vector"]
+        rotation_delta = action_val["rotation_delta"]
+        open_gripper = tf.cast(action_val["open_gripper"][:, None], tf.float32)
         result["action"] = tf.concat(
-            (
-                action_dict["world_vector"],
-                action_dict["rotation_delta"],
-                tf.cast(action_dict["open_gripper"][:, None], tf.float32),
-            ),
+            (world_vector, rotation_delta, open_gripper),
             axis=-1,
         )
 
