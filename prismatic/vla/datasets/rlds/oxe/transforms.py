@@ -56,11 +56,21 @@ def bridge_oxe_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
             ),
             axis=-1,
         )
+
+
+    result["action"] = tf.concat(
+        (
+            result["action"]["world_vector"],
+            result["action"]["rotation_delta"],
+            tf.cast(result["action"]["open_gripper"][:, None], tf.float32),
+        ),
+        axis=-1,
+    )
+
     result["language_instruction"] = result["observation"]["natural_language_instruction"]
     result = relabel_bridge_actions(result)
     result["observation"]["EEF_state"] = result["observation"]["state"][:, :6]
     result["observation"]["gripper_state"] = result["observation"]["state"][:, -1:]
-
     return result
 
 
