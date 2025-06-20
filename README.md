@@ -216,7 +216,7 @@ torchrun --standalone --nnodes 1 --nproc-per-node 8 main.py fit \
 `prismatic.available_model_names()`.
 
 > [!NOTE]
-> For pretraining UniVLA only on BridgeV2 or Human (Ego4D) data, please modify ```vla.type``` to ```prism-dinosiglip-224px+mx-bridge(human)``` correspondingly. Detailed setups can be found in ```./prismatic/conf/vla.py```.
+> For pretraining UniVLA only on BridgeV2 or Human (Ego4D) data, please modify ```vla.type``` to ```prism-dinosiglip-224px+mx-bridge(human)``` correspondingly. Detailed setups can be found in ```./prismatic/conf/vla.py`. To train solely on the TacoPlay dataset use ```vla.type prism-dinosiglip-224px+mx-taco-play```.
 
 The RLDS TFRecord directory passed to `--data_root_dir` should contain the
 `bridge_oxe` dataset in the standard TFDS layout:
@@ -240,6 +240,27 @@ torchrun --nproc_per_node 8 vla-scripts/train.py \
     --pretrain_vlm prism-dinosiglip-224px+7b \
     --lam_path latent_action_model/logs/task_centric_lam_stage2/epoch=0-step=200000.ckpt \
     --run_root_dir runs
+```
+
+The RLDS directory for TacoPlay should follow a similar layout:
+```
+/path/to/taco_play_rlds/
+    taco_play/
+        1.0.0/
+            dataset_info.json
+            taco_play.tfrecord-00000-of-00005
+            taco_play.tfrecord-00001-of-00005
+            ...
+```
+You can launch training on TacoPlay with:
+```bash
+torchrun --nproc_per_node 8 vla-scripts/train.py \
+    --vla.type prism-dinosiglip-224px+mx-taco-play \
+    --data_root_dir /path/to/taco_play_rlds \
+    --pretrain_vlm prism-dinosiglip-224px+7b \
+    --lam_path latent_action_model/logs/task_centric_lam_stage2/epoch=0-step=200000.ckpt \
+    --run_root_dir runs
+```
 
 ```bash
 ### Experiment on a 32-GPU cluster

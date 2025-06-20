@@ -18,6 +18,10 @@ OXE_NAMED_MIXTURES: Dict[str, List[Tuple[str, float]]] = {
     "droid": [
         ("droid", 1.0),
     ],
+
+    "taco_play": [
+        ("taco_play", 1.0),
+    ],
     
     # === Human-data Only ===
     "Ego4D": [ 

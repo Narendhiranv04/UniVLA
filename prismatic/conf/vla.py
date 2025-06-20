@@ -104,6 +104,14 @@ class Exp_DinoSigLIP_224px_Bridge(Exp_SigLIP_224px_Bridge):
 
 
 @dataclass
+class Exp_DinoSigLIP_224px_TacoPlay(Exp_SigLIP_224px_Bridge):
+    vla_id: str = "prism-dinosiglip-224px+mx-taco-play"
+    base_vlm: Union[str, Path] = "prism-dinosiglip-224px+7b"
+
+    data_mix: str = "taco_play"
+
+
+@dataclass
 class Exp_DinoSigLIP_224px_Human(Exp_SigLIP_224px_Bridge):
     vla_id: str = "prism-dinosiglip-224px+mx-human"
     base_vlm: Union[str, Path] = "prism-dinosiglip-224px+7b"
@@ -138,6 +146,9 @@ class VLARegistry(Enum):
 
     # Pre-training on Human data only
     DINOSIGLIP_224PX_MX_HUMAN = Exp_DinoSigLIP_224px_Human
+
+    # Pre-training on TacoPlay data only
+    DINOSIGLIP_224PX_MX_TACO_PLAY = Exp_DinoSigLIP_224px_TacoPlay
 
     # Pre-training on full dataset
     DINOSIGLIP_224PX_MX_OXE_MAGIC_SOUP_PLUS = Exp_DinoSigLIP_224px_OXE_Magic_Soup_Plus
