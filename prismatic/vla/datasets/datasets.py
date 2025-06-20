@@ -92,9 +92,18 @@ class RLDSBatchTransform:
                 shift_idx = max(0, min(len(obs_frames) - 1, shift))
             img_aug = Image.fromarray(obs_frames[shift_idx])
             img_aug = self.aug_transform(img_aug)
-            pixel_values_aug = self.image_transform(img_aug) + 0.01 * torch.randn_like(pixel_values)
+            pixel_values_aug = self.image_transform(img_aug)
+            if isinstance(pixel_values_aug, dict):
+                pixel_values_aug = tree_map(
+                    lambda x: x + 0.01 * torch.randn_like(x), pixel_values_aug
+                )
+            else:
+                pixel_values_aug = pixel_values_aug + 0.01 * torch.randn_like(pixel_values_aug)
         else:
-            pixel_values_aug = pixel_values.clone()
+            if isinstance(pixel_values, dict):
+                pixel_values_aug = tree_map(lambda x: x.clone(), pixel_values)
+            else:
+                pixel_values_aug = pixel_values.clone()
 
         # [CRITICAL] We do not want to take the loss for anything but the predicted action tokens!
         labels[: -(len(action) + 1)] = IGNORE_INDEX
@@ -233,9 +242,17 @@ class RLDSBatchTransformLIBERO:
             img_aug = Image.fromarray(obs_frames[shift_idx])
             img_aug = self.aug_transform(img_aug)
             pixel_values_aug = self.image_transform(img_aug)
-            pixel_values_aug = pixel_values_aug + 0.01 * torch.randn_like(pixel_values_aug)
+            if isinstance(pixel_values_aug, dict):
+                pixel_values_aug = tree_map(
+                    lambda x: x + 0.01 * torch.randn_like(x), pixel_values_aug
+                )
+            else:
+                pixel_values_aug = pixel_values_aug + 0.01 * torch.randn_like(pixel_values_aug)
         else:
-            pixel_values_aug = pixel_values.clone()
+            if isinstance(pixel_values, dict):
+                pixel_values_aug = tree_map(lambda x: x.clone(), pixel_values)
+            else:
+                pixel_values_aug = pixel_values.clone()
 
         with torch.no_grad():
             initial_pixel_values = self.image_transform_lam(img)
@@ -313,9 +330,18 @@ class RLDSBatchTransformLatentAction:
                 shift_idx = max(0, min(len(obs_frames) - 1, shift))
             img_aug = Image.fromarray(obs_frames[shift_idx])
             img_aug = self.aug_transform(img_aug)
-            pixel_values_aug = self.image_transform(img_aug) + 0.01 * torch.randn_like(pixel_values)
+            pixel_values_aug = self.image_transform(img_aug)
+            if isinstance(pixel_values_aug, dict):
+                pixel_values_aug = tree_map(
+                    lambda x: x + 0.01 * torch.randn_like(x), pixel_values_aug
+                )
+            else:
+                pixel_values_aug = pixel_values_aug + 0.01 * torch.randn_like(pixel_values_aug)
         else:
-            pixel_values_aug = pixel_values.clone()
+            if isinstance(pixel_values, dict):
+                pixel_values_aug = tree_map(lambda x: x.clone(), pixel_values)
+            else:
+                pixel_values_aug = pixel_values.clone()
 
         with torch.no_grad():
             initial_pixel_values = self.image_transform_lam(img)
