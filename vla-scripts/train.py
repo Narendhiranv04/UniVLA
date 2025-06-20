@@ -90,6 +90,13 @@ class TrainConfig:
 
         self.train_strategy = self.vla.train_strategy
 
+        # Ensure trackers are provided as a tuple of full tracker names
+        if isinstance(self.trackers, str):
+            self.trackers = (self.trackers,)
+        elif all(len(t) == 1 for t in self.trackers) and "".join(self.trackers) in {"jsonl", "wandb"}:
+            # handles case like ('j','s','o','n','l')
+            self.trackers = ("".join(self.trackers),)
+
         # [Validate] Assert on `expected_world_size`
         assert (
             self.vla.expected_world_size == overwatch.world_size()
@@ -255,6 +262,7 @@ def train(cfg: TrainConfig) -> None:
 
     # Create Metrics =>> Handles on the fly tracking, logging to specified trackers (e.g., JSONL, Weights & Biases)
     overwatch.info(f"Creating Metrics with Active Trackers => `{cfg.trackers}`")
+    cfg.trackers = tuple(cfg.trackers)
     metrics = VLAMetrics(
         cfg.trackers,
         cfg.run_id,
