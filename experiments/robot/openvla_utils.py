@@ -100,6 +100,7 @@ def crop_and_resize(image, crop_scale, batch_size):
 
     # Center-crop and then resize back up
     crop_frac = tf.sqrt(crop_scale)
+    crop_frac = tf.clip_by_value(crop_frac, 0, 1)
     image = tf.image.central_crop(image, crop_frac)
     image = tf.image.resize(image, (224, 224), method="bilinear")
 
