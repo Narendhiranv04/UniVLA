@@ -392,6 +392,10 @@ class TrainingStrategy(ABC):
                 self.optimizer.step()
                 self.lr_scheduler.step()
                 self.optimizer.zero_grad()
+                # Empty unused CUDA memory to prevent fragmentation during
+                # training. Other fine-tuning scripts already invoke this at
+                # the start of each iteration.
+                torch.cuda.empty_cache()
 
                 # Compute epoch value using number of completed gradient steps
                 epoch = (metrics.global_step + 1) // (len(vla_dataset) // self.global_batch_size)
