@@ -98,25 +98,10 @@ def crop_and_resize(image, crop_scale, batch_size):
         image = tf.expand_dims(image, axis=0)
         expanded_dims = True
 
-    # Get height and width of crop
-    new_heights = tf.reshape(tf.clip_by_value(tf.sqrt(crop_scale), 0, 1), shape=(batch_size,))
-    new_widths = tf.reshape(tf.clip_by_value(tf.sqrt(crop_scale), 0, 1), shape=(batch_size,))
-
-    # Get bounding box representing crop
-    height_offsets = (1 - new_heights) / 2
-    width_offsets = (1 - new_widths) / 2
-    bounding_boxes = tf.stack(
-        [
-            height_offsets,
-            width_offsets,
-            height_offsets + new_heights,
-            width_offsets + new_widths,
-        ],
-        axis=1,
-    )
-
-    # Crop and then resize back up
-    image = tf.image.crop_and_resize(image, bounding_boxes, tf.range(batch_size), (224, 224))
+    # Center-crop and then resize back up
+    crop_frac = tf.sqrt(crop_scale)
+    image = tf.image.central_crop(image, crop_frac)
+    image = tf.image.resize(image, (224, 224), method="bilinear")
 
     # Convert back to 3D Tensor (H, W, C)
     if expanded_dims:
