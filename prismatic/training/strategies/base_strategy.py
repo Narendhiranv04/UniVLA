@@ -308,12 +308,11 @@ class TrainingStrategy(ABC):
                     hidden = output.hidden_states[-1][:, self.vlm.vision_backbone.num_patches : -1, :]
                     hidden_aug = output_aug.hidden_states[-1][:, self.vlm.vision_backbone.num_patches : -1, :]
                     mask_tokens = (batch["labels"][:, 1:] != IGNORE_INDEX).view(-1)
-                    proj_hidden = self.vlm.token_projector(hidden)
-                    proj_hidden_aug = self.vlm.token_projector(hidden_aug)
-                    z = proj_hidden.view(-1, proj_hidden.size(-1))[mask_tokens]
-                    z_aug = proj_hidden_aug.view(-1, proj_hidden_aug.size(-1))[mask_tokens]
-                    z = z.view(-1, proj_hidden.size(-1))
-                    z_aug = z_aug.view(-1, proj_hidden_aug.size(-1))
+                    proj_hidden = self.vlm.token_projector(hidden.view(-1, hidden.size(-1)))
+                    proj_hidden_aug = self.vlm.token_projector(hidden_aug.view(-1, hidden_aug.size(-1)))
+                    z = proj_hidden[mask_tokens].view(-1, proj_hidden.size(-1))
+                    z_aug = proj_hidden_aug[mask_tokens].view(-1, proj_hidden_aug.size(-1))
+                   
                     z = torch.nn.functional.normalize(z, dim=1)
                     z_aug = torch.nn.functional.normalize(z_aug, dim=1)
                     logits = z @ z_aug.t() / 0.1
@@ -487,17 +486,14 @@ class TrainingStrategy(ABC):
                         output_hidden_states=True,
                     )
                     loss = output.loss
-
                     # === InfoNCE Loss ===
                     hidden = output.hidden_states[-1][:, self.vlm.vision_backbone.num_patches : -1, :]
                     hidden_aug = output_aug.hidden_states[-1][:, self.vlm.vision_backbone.num_patches : -1, :]
                     mask_tokens = (batch["labels"][:, 1:] != IGNORE_INDEX).view(-1)
-                    proj_hidden = self.vlm.token_projector(hidden)
-                    proj_hidden_aug = self.vlm.token_projector(hidden_aug)
-                    z = proj_hidden.view(-1, proj_hidden.size(-1))[mask_tokens]
-                    z_aug = proj_hidden_aug.view(-1, proj_hidden_aug.size(-1))[mask_tokens]
-                    z = z.view(-1, proj_hidden.size(-1))
-                    z_aug = z_aug.view(-1, proj_hidden_aug.size(-1))
+                    proj_hidden = self.vlm.token_projector(hidden.view(-1, hidden.size(-1)))
+                    proj_hidden_aug = self.vlm.token_projector(hidden_aug.view(-1, hidden_aug.size(-1)))
+                    z = proj_hidden[mask_tokens].view(-1, proj_hidden.size(-1))
+                    z_aug = proj_hidden_aug[mask_tokens].view(-1, proj_hidden_aug.size(-1))
                     z = torch.nn.functional.normalize(z, dim=1)
                     z_aug = torch.nn.functional.normalize(z_aug, dim=1)
                     logits = z @ z_aug.t() / 0.1
