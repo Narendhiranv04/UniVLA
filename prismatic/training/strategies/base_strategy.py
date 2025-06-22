@@ -80,9 +80,9 @@ class TrainingStrategy(ABC):
         self.optimizer, self.lr_scheduler = None, None
 
         # Lightweight Validation
-        assert self.global_batch_size % self.per_device_batch_size == 0, (
-            "Per-device batch size must evenly divide global batch size!"
-        )
+        assert (
+            self.global_batch_size % self.per_device_batch_size == 0
+        ), "Per-device batch size must evenly divide global batch size!"
         self.grad_accumulation_steps = self.global_batch_size // self.per_device_batch_size // overwatch.world_size()
         if self.enable_mixed_precision_training:
             assert self.mixed_precision_dtype == torch.bfloat16, "Only BF16 mixed precision training is supported!"
@@ -473,11 +473,35 @@ class TrainingStrategy(ABC):
                         attention_mask=batch["attention_mask"],
                         pixel_values=batch["pixel_values"],
                         labels=batch["labels"],
+                        output_hidden_states=True,
+                    )
+                    output_aug: CausalLMOutputWithPast = self.vlm(
+                        input_ids=batch["input_ids"],
+                        attention_mask=batch["attention_mask"],
+                        pixel_values=batch["pixel_values_aug"],
+                        labels=None,
+                        output_hidden_states=True,
                     )
                     loss = output.loss
 
+                    # === InfoNCE Loss ===
+                    hidden = output.hidden_states[-1][:, self.vlm.vision_backbone.num_patches : -1, :]
+                    hidden_aug = output_aug.hidden_states[-1][:, self.vlm.vision_backbone.num_patches : -1, :]
+                    mask_tokens = batch["labels"][:, 1:] != IGNORE_INDEX
+                    z = self.vlm.token_projector(hidden)[mask_tokens]
+                    z_aug = self.vlm.token_projector(hidden_aug)[mask_tokens]
+                    z = torch.nn.functional.normalize(z, dim=1)
+                    z_aug = torch.nn.functional.normalize(z_aug, dim=1)
+                    logits = z @ z_aug.t() / 0.1
+                    targets = torch.arange(z.size(0), device=z.device)
+                    info_nce = (
+                        torch.nn.functional.cross_entropy(logits, targets)
+                        + torch.nn.functional.cross_entropy(logits.t(), targets)
+                    ) / 2
+                    loss = loss + info_nce
+
                 # Commit Loss =>> Backward!
-                metrics.commit(loss=loss)
+                metrics.commit(loss=loss, info_nce_loss=info_nce)
                 loss.backward()
 
                 # === Compute Action Token Accuracy & L1 Loss ===
