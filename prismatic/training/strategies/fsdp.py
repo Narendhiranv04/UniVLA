@@ -156,6 +156,16 @@ class FSDPStrategy(TrainingStrategy):
                 param_dtype=torch.float32, reduce_dtype=torch.float32, buffer_dtype=torch.float32
             )
 
+        # Gradient Checkpoint Setup -- apply **before** wrapping with FSDP to avoid
+        # gradient shape mismatches when using `use_orig_params`
+        if self.enable_gradient_checkpointing:
+            non_reentrant_wrapper = partial(checkpoint_wrapper, checkpoint_impl=CheckpointImpl.NO_REENTRANT)
+
+            def check_fn(submodule: nn.Module) -> bool:
+                return isinstance(submodule, self.llm_transformer_layer_cls)
+
+            apply_activation_checkpointing(self.vlm, checkpoint_wrapper_fn=non_reentrant_wrapper, check_fn=check_fn)
+
         # <FSDP> => note that FSDP will automatically take care of device placement (similar to `autocast`)
         self.vlm = FSDP(
             self.vlm,
@@ -166,21 +176,6 @@ class FSDPStrategy(TrainingStrategy):
             limit_all_gathers=True,
             use_orig_params=True,
         )
-
-        # Gradient Checkpoint Setup
-        if self.enable_gradient_checkpointing:
-            # For Gradient Checkpointing under FSDP --> we make the same assumption as in the DDP/other strategies; the
-            #   bulk of activation memory is taken up by the LLM activations. However, unlike other strategies, we
-            #   cannot rely on the HF Transformers default `gradient_checkpointing_enable()` --> FSDP breaks semantics!
-            #
-            # Instead, we need to write our own *NO-REENTRANT* wrapper, and apply it to the LLM's Transformer Layer.
-            non_reentrant_wrapper = partial(checkpoint_wrapper, checkpoint_impl=CheckpointImpl.NO_REENTRANT)
-
-            def check_fn(submodule: nn.Module) -> bool:
-                return isinstance(submodule, self.llm_transformer_layer_cls)
-
-            # Note that the terms "activation checkpointing" and "gradient checkpointing" are synonymous!
-            apply_activation_checkpointing(self.vlm, checkpoint_wrapper_fn=non_reentrant_wrapper, check_fn=check_fn)
 
         # Barrier =>> Sharding takes a minute?
         dist.barrier()
