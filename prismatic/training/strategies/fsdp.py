@@ -85,6 +85,8 @@ class FSDPStrategy(TrainingStrategy):
             self.fsdp_sharding_strategy = ShardingStrategy._HYBRID_SHARD_ZERO2
         elif sharding_strategy == "full-shard":
             self.fsdp_sharding_strategy = ShardingStrategy.HYBRID_SHARD
+        elif sharding_strategy == "no-shard":
+            self.fsdp_sharding_strategy = ShardingStrategy.NO_SHARD
         else:
             raise ValueError(f"FSDP Sharding Strategy {sharding_strategy} is not supported!")
 
@@ -114,7 +116,10 @@ class FSDPStrategy(TrainingStrategy):
             for key, param in full_vlm_state_dict.items():
                 for mkey in model_state_dicts:
                     if key.startswith(mprefix := f"{mkey}."):
-                        model_state_dicts[mkey][key.removeprefix(mprefix)] = param
+                        param_to_save = (
+                            param.flatten() if self.fsdp_sharding_strategy == ShardingStrategy.NO_SHARD else param
+                        )
+                        model_state_dicts[mkey][key.removeprefix(mprefix)] = param_to_save
 
             # Save on rank zero *only*
             if overwatch.is_rank_zero():
