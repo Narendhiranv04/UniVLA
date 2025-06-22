@@ -312,13 +312,13 @@ class TrainingStrategy(ABC):
                     flat_hidden = hidden.reshape(-1, hidden.shape[-1])
                     flat_hidden_aug = hidden_aug.reshape(-1, hidden_aug.shape[-1])
 
-                    masked_hidden = flat_hidden[mask_tokens].reshape(
-                        -1, flat_hidden.size(-1)
-                    )
-                    masked_hidden_aug = flat_hidden_aug[mask_tokens].reshape(
-                        -1, flat_hidden_aug.size(-1)
-                    )
+                    masked_hidden = flat_hidden[mask_tokens].reshape(-1, flat_hidden.size(-1))
+                    masked_hidden_aug = flat_hidden_aug[mask_tokens].reshape(-1, flat_hidden_aug.size(-1))
 
+                    if masked_hidden.ndim == 1:
+                        masked_hidden = masked_hidden.unsqueeze(0)
+                    if masked_hidden_aug.ndim == 1:
+                        masked_hidden_aug = masked_hidden_aug.unsqueeze(0)
 
                     proj_hidden = self.vlm.token_projector(masked_hidden)
                     proj_hidden_aug = self.vlm.token_projector(masked_hidden_aug)
@@ -504,12 +504,13 @@ class TrainingStrategy(ABC):
                     flat_hidden = hidden.reshape(-1, hidden.shape[-1])
                     flat_hidden_aug = hidden_aug.reshape(-1, hidden_aug.shape[-1])
 
-                    masked_hidden = flat_hidden[mask_tokens].reshape(
-                        -1, flat_hidden.size(-1)
-                    )
-                    masked_hidden_aug = flat_hidden_aug[mask_tokens].reshape(
-                        -1, flat_hidden_aug.size(-1)
-                    )
+                    masked_hidden = flat_hidden[mask_tokens].reshape(-1, flat_hidden.size(-1))
+                    masked_hidden_aug = flat_hidden_aug[mask_tokens].reshape(-1, flat_hidden_aug.size(-1))
+
+                    if masked_hidden.ndim == 1:
+                        masked_hidden = masked_hidden.unsqueeze(0)
+                    if masked_hidden_aug.ndim == 1:
+                        masked_hidden_aug = masked_hidden_aug.unsqueeze(0)
 
                     proj_hidden = self.vlm.token_projector(masked_hidden)
                     proj_hidden_aug = self.vlm.token_projector(masked_hidden_aug)
