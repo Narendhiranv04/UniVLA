@@ -164,13 +164,13 @@ class FSDPStrategy(TrainingStrategy):
         # Gradient Checkpoint Setup -- must precede FSDP wrapping so that
         # checkpoint wrappers are applied to the original modules
         if self.enable_gradient_checkpointing:
-            non_reentrant_wrapper = partial(checkpoint_wrapper, checkpoint_impl=CheckpointImpl.NO_REENTRANT)
+            reentrant_wrapper = partial(checkpoint_wrapper, checkpoint_impl=CheckpointImpl.REENTRANT)
 
             def check_fn(submodule: nn.Module) -> bool:
                 module_to_check = submodule.module if isinstance(submodule, FSDP) else submodule
                 return isinstance(module_to_check, self.llm_transformer_layer_cls)
 
-            apply_activation_checkpointing(self.vlm, checkpoint_wrapper_fn=non_reentrant_wrapper, check_fn=check_fn)
+            apply_activation_checkpointing(self.vlm, checkpoint_wrapper_fn=reentrant_wrapper, check_fn=check_fn)
 
         # <FSDP> => note that FSDP will automatically take care of device placement (similar to `autocast`)
         self.vlm = FSDP(
