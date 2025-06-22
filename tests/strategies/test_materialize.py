@@ -50,7 +50,7 @@ def test_get_train_strategy_no_shard():
 def test_get_train_strategy_ddp():
     strategy = get_train_strategy(
         "ddp",
-        vlm=TinyVLM(),
+        vlm=vlm,
         device_id=0,
         stage="full-finetune",
         epochs=1,
