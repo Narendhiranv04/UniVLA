@@ -314,6 +314,7 @@ class TrainingStrategy(ABC):
                     z_aug = proj_hidden_aug[mask_tokens]
                     z = z.view(-1, proj_hidden.size(-1))
                     z_aug = z_aug.view(-1, proj_hidden_aug.size(-1))
+                    
                     z = torch.nn.functional.normalize(z, dim=1)
                     z_aug = torch.nn.functional.normalize(z_aug, dim=1)
                     logits = z @ z_aug.t() / 0.1
