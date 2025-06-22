@@ -319,6 +319,7 @@ class TrainingStrategy(ABC):
                         -1, flat_hidden_aug.size(-1)
                     )
 
+
                     proj_hidden = self.vlm.token_projector(masked_hidden)
                     proj_hidden_aug = self.vlm.token_projector(masked_hidden_aug)
 
@@ -512,7 +513,6 @@ class TrainingStrategy(ABC):
 
                     proj_hidden = self.vlm.token_projector(masked_hidden)
                     proj_hidden_aug = self.vlm.token_projector(masked_hidden_aug)
-
                     z = torch.nn.functional.normalize(proj_hidden, dim=1)
                     z_aug = torch.nn.functional.normalize(proj_hidden_aug, dim=1)
 
