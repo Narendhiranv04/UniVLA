@@ -85,6 +85,8 @@ class FSDPStrategy(TrainingStrategy):
             self.fsdp_sharding_strategy = ShardingStrategy._HYBRID_SHARD_ZERO2
         elif sharding_strategy == "full-shard":
             self.fsdp_sharding_strategy = ShardingStrategy.HYBRID_SHARD
+        elif sharding_strategy == "no-shard":
+            self.fsdp_sharding_strategy = ShardingStrategy.NO_SHARD
         else:
             raise ValueError(f"FSDP Sharding Strategy {sharding_strategy} is not supported!")
 
@@ -114,7 +116,10 @@ class FSDPStrategy(TrainingStrategy):
             for key, param in full_vlm_state_dict.items():
                 for mkey in model_state_dicts:
                     if key.startswith(mprefix := f"{mkey}."):
-                        model_state_dicts[mkey][key.removeprefix(mprefix)] = param
+                        param_to_save = (
+                            param.flatten() if self.fsdp_sharding_strategy == ShardingStrategy.NO_SHARD else param
+                        )
+                        model_state_dicts[mkey][key.removeprefix(mprefix)] = param_to_save
 
             # Save on rank zero *only*
             if overwatch.is_rank_zero():
@@ -156,6 +161,17 @@ class FSDPStrategy(TrainingStrategy):
                 param_dtype=torch.float32, reduce_dtype=torch.float32, buffer_dtype=torch.float32
             )
 
+        # Gradient Checkpoint Setup -- must precede FSDP wrapping so that
+        # checkpoint wrappers are applied to the original modules
+        if self.enable_gradient_checkpointing:
+            non_reentrant_wrapper = partial(checkpoint_wrapper, checkpoint_impl=CheckpointImpl.NO_REENTRANT)
+
+            def check_fn(submodule: nn.Module) -> bool:
+                module_to_check = submodule.module if isinstance(submodule, FSDP) else submodule
+                return isinstance(module_to_check, self.llm_transformer_layer_cls)
+
+            apply_activation_checkpointing(self.vlm, checkpoint_wrapper_fn=non_reentrant_wrapper, check_fn=check_fn)
+
         # <FSDP> => note that FSDP will automatically take care of device placement (similar to `autocast`)
         self.vlm = FSDP(
             self.vlm,
@@ -166,17 +182,6 @@ class FSDPStrategy(TrainingStrategy):
             limit_all_gathers=True,
             use_orig_params=True,
         )
-
-        # Gradient Checkpoint Setup -- apply after wrapping with FSDP so that
-        # checkpoint wrappers operate on the `use_orig_params` tensors
-        if self.enable_gradient_checkpointing:
-            non_reentrant_wrapper = partial(checkpoint_wrapper, checkpoint_impl=CheckpointImpl.NO_REENTRANT)
-
-            def check_fn(submodule: nn.Module) -> bool:
-                module_to_check = submodule.module if isinstance(submodule, FSDP) else submodule
-                return isinstance(module_to_check, self.llm_transformer_layer_cls)
-
-            apply_activation_checkpointing(self.vlm, checkpoint_wrapper_fn=non_reentrant_wrapper, check_fn=check_fn)
 
         # Barrier =>> Sharding takes a minute?
         dist.barrier()
