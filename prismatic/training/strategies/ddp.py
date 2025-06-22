@@ -92,7 +92,8 @@ class DDPStrategy(TrainingStrategy):
             num_warmup_steps = int(num_training_steps * self.warmup_ratio)
 
             assert self.weight_decay == 0, "DDP training does not currently support `weight_decay` > 0!"
-            self.optimizer = AdamW(trainable_params, lr=self.learning_rate, weight_decay=self.weight_decay)
+            # Disable foreach ops to reduce peak memory usage
+            self.optimizer = AdamW(trainable_params, lr=self.learning_rate, weight_decay=self.weight_decay, foreach=False)
             self.lr_scheduler = get_cosine_schedule_with_warmup(self.optimizer, num_warmup_steps, num_training_steps)
             for param_group in self.optimizer.param_groups:
                 param_group["lr"] = 0.0
@@ -101,7 +102,8 @@ class DDPStrategy(TrainingStrategy):
             num_warmup_steps = 0
 
             assert self.weight_decay == 0, "DDP training does not currently support `weight_decay` > 0!"
-            self.optimizer = AdamW(trainable_params, lr=self.learning_rate, weight_decay=self.weight_decay)
+            # Disable foreach ops to reduce peak memory usage
+            self.optimizer = AdamW(trainable_params, lr=self.learning_rate, weight_decay=self.weight_decay, foreach=False)
             self.lr_scheduler = get_constant_schedule(self.optimizer)
 
         else:
