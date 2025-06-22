@@ -48,7 +48,6 @@ def test_get_train_strategy_no_shard():
 
 
 def test_get_train_strategy_ddp():
-    vlm = TinyVLM()
     strategy = get_train_strategy(
         "ddp",
         vlm=vlm,
