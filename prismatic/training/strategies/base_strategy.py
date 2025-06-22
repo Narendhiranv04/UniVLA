@@ -104,6 +104,15 @@ class TrainingStrategy(ABC):
     @abstractmethod
     def clip_grad_norm(self) -> None: ...
 
+    @staticmethod
+    def _normalize_hidden(tensor: torch.Tensor) -> torch.Tensor:
+        """Ensure tensors passed to the projector are two dimensional."""
+        if tensor.ndim == 1:
+            return tensor.unsqueeze(0)
+        if tensor.ndim > 2:
+            return tensor.view(-1, tensor.size(-1))
+        return tensor
+
     def run_training(
         self,
         dataset: Dataset,
@@ -315,15 +324,8 @@ class TrainingStrategy(ABC):
                     masked_hidden = flat_hidden[mask_tokens].reshape(-1, flat_hidden.size(-1))
                     masked_hidden_aug = flat_hidden_aug[mask_tokens].reshape(-1, flat_hidden_aug.size(-1))
 
-                    if masked_hidden.ndim == 1:
-                        masked_hidden = masked_hidden.unsqueeze(0)
-                    elif masked_hidden.ndim > 2:
-                        masked_hidden = masked_hidden.view(-1, masked_hidden.size(-1))
-
-                    if masked_hidden_aug.ndim == 1:
-                        masked_hidden_aug = masked_hidden_aug.unsqueeze(0)
-                    elif masked_hidden_aug.ndim > 2:
-                        masked_hidden_aug = masked_hidden_aug.view(-1, masked_hidden_aug.size(-1))
+                    masked_hidden = self._normalize_hidden(masked_hidden)
+                    masked_hidden_aug = self._normalize_hidden(masked_hidden_aug)
 
                     info_nce = torch.tensor(0.0, device=masked_hidden.device)
                     if masked_hidden.numel() != 0:
@@ -514,15 +516,8 @@ class TrainingStrategy(ABC):
                     masked_hidden = flat_hidden[mask_tokens].reshape(-1, flat_hidden.size(-1))
                     masked_hidden_aug = flat_hidden_aug[mask_tokens].reshape(-1, flat_hidden_aug.size(-1))
 
-                    if masked_hidden.ndim == 1:
-                        masked_hidden = masked_hidden.unsqueeze(0)
-                    elif masked_hidden.ndim > 2:
-                        masked_hidden = masked_hidden.view(-1, masked_hidden.size(-1))
-
-                    if masked_hidden_aug.ndim == 1:
-                        masked_hidden_aug = masked_hidden_aug.unsqueeze(0)
-                    elif masked_hidden_aug.ndim > 2:
-                        masked_hidden_aug = masked_hidden_aug.view(-1, masked_hidden_aug.size(-1))
+                    masked_hidden = self._normalize_hidden(masked_hidden)
+                    masked_hidden_aug = self._normalize_hidden(masked_hidden_aug)
 
                     info_nce = torch.tensor(0.0, device=masked_hidden.device)
                     if masked_hidden.numel() != 0:
