@@ -237,15 +237,28 @@ The RLDS TFRecord directory passed to `--data_root_dir` should contain the
             ...
 ```
 
-With the files arranged in this structure you can launch training as follows:
+With the files arranged in this structure you can launch training as follows.
+The default `fsdp-full-shard` strategy is memory efficient. You can also
+switch to **DDP** via `--vla.train_strategy ddp`, though it might require more
+GPU memory than FSDP.
 
 ```bash
+# FSDP (default)
 torchrun --nproc_per_node 8 vla-scripts/train.py \
     --vla.type prism-dinosiglip-224px+mx-bridge \
     --data_root_dir /path/to/bridge_v2_rlds \
     --pretrain_vlm prism-dinosiglip-224px+7b \
     --lam_path latent_action_model/logs/task_centric_lam_stage2/epoch=0-step=200000.ckpt \
     --run_root_dir runs
+
+# Or train with DDP
+torchrun --nproc_per_node 8 vla-scripts/train.py \
+    --vla.type prism-dinosiglip-224px+mx-bridge \
+    --data_root_dir /path/to/bridge_v2_rlds \
+    --pretrain_vlm prism-dinosiglip-224px+7b \
+    --lam_path latent_action_model/logs/task_centric_lam_stage2/epoch=0-step=200000.ckpt \
+    --run_root_dir runs \
+    --vla.train_strategy ddp
 ```
 
 The RLDS directory for TacoPlay should follow a similar layout:
