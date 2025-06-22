@@ -136,6 +136,16 @@ class FSDPStrategy(TrainingStrategy):
         # Iteratively Assemble FSDP Wrapping Policy by fetching the wrapping policies for each backbone/constituent
         vlm_fsdp_wrapping_policy = self.vlm.get_fsdp_wrapping_policy()
 
+        # Gradient Checkpoint Setup -- apply before wrapping with FSDP
+        # to avoid gradient shape mismatches when using `use_orig_params`
+        if self.enable_gradient_checkpointing:
+            non_reentrant_wrapper = partial(checkpoint_wrapper, checkpoint_impl=CheckpointImpl.NO_REENTRANT)
+
+            def check_fn(submodule: nn.Module) -> bool:
+                return isinstance(submodule, self.llm_transformer_layer_cls)
+
+            apply_activation_checkpointing(self.vlm, checkpoint_wrapper_fn=non_reentrant_wrapper, check_fn=check_fn)
+
         # Assemble the Default FSDP Mixed Precision Policy
         if self.enable_mixed_precision_training and self.mixed_precision_dtype == torch.bfloat16:
             # MixedPrecision `param_dtype` specifies *compute* dtype (for forward/backward only)
@@ -155,16 +165,6 @@ class FSDPStrategy(TrainingStrategy):
             fsdp_precision_policy = MixedPrecision(
                 param_dtype=torch.float32, reduce_dtype=torch.float32, buffer_dtype=torch.float32
             )
-
-        # Gradient Checkpoint Setup -- apply **before** wrapping with FSDP to avoid
-        # gradient shape mismatches when using `use_orig_params`
-        if self.enable_gradient_checkpointing:
-            non_reentrant_wrapper = partial(checkpoint_wrapper, checkpoint_impl=CheckpointImpl.NO_REENTRANT)
-
-            def check_fn(submodule: nn.Module) -> bool:
-                return isinstance(submodule, self.llm_transformer_layer_cls)
-
-            apply_activation_checkpointing(self.vlm, checkpoint_wrapper_fn=non_reentrant_wrapper, check_fn=check_fn)
 
         # <FSDP> => note that FSDP will automatically take care of device placement (similar to `autocast`)
         self.vlm = FSDP(
