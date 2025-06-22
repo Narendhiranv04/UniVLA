@@ -66,7 +66,13 @@ class DDPStrategy(TrainingStrategy):
             # Additional Reference (to better understand gradient checkpointing in PyTorch writ large)
             #   => github.com/prigoyal/pytorch_memonger/blob/master/tutorial/Checkpointing_for_PyTorch_models.ipynb
             overwatch.info("Enabling Gradient Checkpointing on LLM Backbone", ctx_level=1)
-            self.vlm.llm_backbone.gradient_checkpointing_enable()
+            if hasattr(self.vlm.llm_backbone, "gradient_checkpointing_enable"):
+                self.vlm.llm_backbone.gradient_checkpointing_enable()
+            else:
+                overwatch.warning(
+                    "LLM backbone does not support gradient checkpointing; proceeding without it",
+                    ctx_level=1,
+                )
 
         # Move to Device =>> Note parameters are in full precision (*mixed precision* will only autocast as appropriate)
         overwatch.info("Placing Entire VLM (Vision Backbone, LLM Backbone, Projector Weights) on GPU", ctx_level=1)
