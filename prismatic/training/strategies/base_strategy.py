@@ -317,21 +317,28 @@ class TrainingStrategy(ABC):
 
                     if masked_hidden.ndim == 1:
                         masked_hidden = masked_hidden.unsqueeze(0)
+                    elif masked_hidden.ndim > 2:
+                        masked_hidden = masked_hidden.view(-1, masked_hidden.size(-1))
+
                     if masked_hidden_aug.ndim == 1:
                         masked_hidden_aug = masked_hidden_aug.unsqueeze(0)
+                    elif masked_hidden_aug.ndim > 2:
+                        masked_hidden_aug = masked_hidden_aug.view(-1, masked_hidden_aug.size(-1))
 
-                    proj_hidden = self.vlm.token_projector(masked_hidden)
-                    proj_hidden_aug = self.vlm.token_projector(masked_hidden_aug)
+                    info_nce = torch.tensor(0.0, device=masked_hidden.device)
+                    if masked_hidden.numel() != 0:
+                        proj_hidden = self.vlm.token_projector(masked_hidden)
+                        proj_hidden_aug = self.vlm.token_projector(masked_hidden_aug)
 
-                    z = torch.nn.functional.normalize(proj_hidden, dim=1)
-                    z_aug = torch.nn.functional.normalize(proj_hidden_aug, dim=1)
-                    logits = z @ z_aug.t() / 0.1
-                    targets = torch.arange(z.size(0), device=z.device)
-                    info_nce = (
-                        torch.nn.functional.cross_entropy(logits, targets)
-                        + torch.nn.functional.cross_entropy(logits.t(), targets)
-                    ) / 2
-                    loss = loss + info_nce
+                        z = torch.nn.functional.normalize(proj_hidden, dim=1)
+                        z_aug = torch.nn.functional.normalize(proj_hidden_aug, dim=1)
+                        logits = z @ z_aug.t() / 0.1
+                        targets = torch.arange(z.size(0), device=z.device)
+                        info_nce = (
+                            torch.nn.functional.cross_entropy(logits, targets)
+                            + torch.nn.functional.cross_entropy(logits.t(), targets)
+                        ) / 2
+                        loss = loss + info_nce
 
                 # Commit Loss =>> Backward!
                 metrics.commit(loss=loss, info_nce_loss=info_nce)
@@ -509,21 +516,28 @@ class TrainingStrategy(ABC):
 
                     if masked_hidden.ndim == 1:
                         masked_hidden = masked_hidden.unsqueeze(0)
+                    elif masked_hidden.ndim > 2:
+                        masked_hidden = masked_hidden.view(-1, masked_hidden.size(-1))
+
                     if masked_hidden_aug.ndim == 1:
                         masked_hidden_aug = masked_hidden_aug.unsqueeze(0)
+                    elif masked_hidden_aug.ndim > 2:
+                        masked_hidden_aug = masked_hidden_aug.view(-1, masked_hidden_aug.size(-1))
 
-                    proj_hidden = self.vlm.token_projector(masked_hidden)
-                    proj_hidden_aug = self.vlm.token_projector(masked_hidden_aug)
-                    z = torch.nn.functional.normalize(proj_hidden, dim=1)
-                    z_aug = torch.nn.functional.normalize(proj_hidden_aug, dim=1)
+                    info_nce = torch.tensor(0.0, device=masked_hidden.device)
+                    if masked_hidden.numel() != 0:
+                        proj_hidden = self.vlm.token_projector(masked_hidden)
+                        proj_hidden_aug = self.vlm.token_projector(masked_hidden_aug)
+                        z = torch.nn.functional.normalize(proj_hidden, dim=1)
+                        z_aug = torch.nn.functional.normalize(proj_hidden_aug, dim=1)
 
-                    logits = z @ z_aug.t() / 0.1
-                    targets = torch.arange(z.size(0), device=z.device)
-                    info_nce = (
-                        torch.nn.functional.cross_entropy(logits, targets)
-                        + torch.nn.functional.cross_entropy(logits.t(), targets)
-                    ) / 2
-                    loss = loss + info_nce
+                        logits = z @ z_aug.t() / 0.1
+                        targets = torch.arange(z.size(0), device=z.device)
+                        info_nce = (
+                            torch.nn.functional.cross_entropy(logits, targets)
+                            + torch.nn.functional.cross_entropy(logits.t(), targets)
+                        ) / 2
+                        loss = loss + info_nce
 
                 # Commit Loss =>> Backward!
                 metrics.commit(loss=loss, info_nce_loss=info_nce)
