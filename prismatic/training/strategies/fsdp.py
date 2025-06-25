@@ -186,6 +186,24 @@ class FSDPStrategy(TrainingStrategy):
         # Barrier =>> Sharding takes a minute?
         dist.barrier()
 
+        # Verify q_proj dimensions after FSDP wrapping
+        try:
+            hidden_dim = self.vlm.llm_backbone.embed_dim
+            for idx, block in enumerate(self.vlm.llm_backbone.llm.model.layers):
+                q_proj = block.self_attn.q_proj
+                if tuple(q_proj.weight.shape) != (hidden_dim, hidden_dim) or (
+                    q_proj.bias is not None and q_proj.bias.numel() != hidden_dim
+                ):
+                    overwatch.warning(
+                        f"q_proj of layer {idx} had shape {tuple(q_proj.weight.shape)} after FSDP wrap; reinitializing"
+                    )
+                    q_proj.weight.data = torch.empty(hidden_dim, hidden_dim, dtype=q_proj.weight.dtype)
+                    torch.nn.init.kaiming_uniform_(q_proj.weight, a=math.sqrt(5))
+                    if q_proj.bias is not None:
+                        q_proj.bias.data.zero_()
+        except Exception as e:  # pragma: no cover - fails if torch missing
+            overwatch.warning(f"Could not validate q_proj weights after FSDP setup: {e}")
+
         # Create Optimizer and LR Scheduler =>> note that most of the LR Schedulers we use require `max_steps/epochs`
         #   => Optimizer should only operate on parameters that are *unfrozen* / trainable!
         n_train_examples = math.ceil(n_train_examples / self.global_batch_size) * self.global_batch_size
