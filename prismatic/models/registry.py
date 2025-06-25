@@ -683,6 +683,19 @@ MODEL_REGISTRY = {
             "train_epochs": 1,
         }
     },
+    "qwen2.5+0.5b": {
+        "model_id": "qwen2.5+0.5b",
+        "names": ["Qwen2.5 0.5B"],
+        "description": {
+            "name": "Qwen2.5 0.5B",
+            "optimization_procedure": "single-stage",
+            "visual_representation": "CLIP ViT-L/14 @ 336px",
+            "image_processing": "Letterbox",
+            "language_model": "Qwen2.5 0.5B",
+            "datasets": ["LLaVa v1.5 Instruct"],
+            "train_epochs": 1,
+        }
+    },
 }
 
 # Build Global Registry (Model ID, Name) -> Metadata
