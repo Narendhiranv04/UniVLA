@@ -290,6 +290,12 @@ class Ext_Exp_3B_Phi_2(Exp_7B_One_Stage):
     llm_backbone_id: str = "phi-2-3b"
 
 
+@dataclass
+class Ext_Exp_0p5B_Qwen2(Exp_7B_One_Stage):
+    model_id: str = "qwen2.5+0.5b"
+    llm_backbone_id: str = "qwen2.5-0.5b"
+
+
 # Section 4.3B :: ✌️ --> Co-training on Language-only Data
 #   =>> Note :: Run with `--dataset.type "llava-multimodal" (multimodal data only / no co-training)
 @dataclass
@@ -538,6 +544,7 @@ class ModelRegistry(Enum):
     EXT_EXP_MISTRAL_V1_7B = Ext_Exp_7B_Mistral_V1
     EXT_EXP_MISTRAL_INSTRUCT_V1_7B = Ext_Exp_7B_Mistral_Instruct_V1
     EXT_EXP_PHI_2_3B = Ext_Exp_3B_Phi_2
+    EXT_EXP_QWEN2_0P5B = Ext_Exp_0p5B_Qwen2
 
     # Cotraining w/ Unimodal Data
     EXP_VICUNA_NO_COTRAINING_7B = Exp_7B_Vicuna_No_Cotraining
