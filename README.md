@@ -30,6 +30,7 @@
     - [LIBERO](#1-libero)
     - [CALVIN](#2-calvin)
 - [:rocket: UniVLA's Performance](#rocket-univlas-performance)
+- [:hammer_and_wrench: Utilities](#hammer_and_wrench-utilities)
 - [:pencil: Citation](#pencil-citation)
 
 
@@ -557,6 +558,24 @@ torchrun --standalone --nnodes 1 --nproc-per-node 8 experiments/robot/calvin/run
 <img src="assets/real-world-exp_1.png" width="1000px" >
 </p>
 </div>
+
+## :hammer_and_wrench: Utilities
+
+### Inspecting `q_proj` Shapes
+
+Use `prismatic/tools/check_q_proj.py` to verify that the query projection
+layers in a checkpoint have the expected dimensions:
+
+```bash
+python prismatic/tools/check_q_proj.py /path/to/your/model
+```
+
+Example output:
+
+```
+q_proj weight: (4096, 4096)
+q_proj bias: (4096,)
+```
 
 ## :pencil: Citation
 If you find our code or models useful in your work, please cite [our paper](https://arxiv.org/pdf/2505.06111):
