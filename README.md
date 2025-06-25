@@ -146,6 +146,12 @@ Real-world robot experiments.
     <td><a href="https://huggingface.co/qwbu/univla-7b-224-sft-calvin">univla-7b-224-sft-calvin</a></td>
     <td>Finetuned on the CALVIN dataset</a></td>
   </tr>
+  <tr>
+    <td>qwen2.5-0.5b</td>
+    <td>Qwen2.5 0.5B</td>
+    <td><a href="https://huggingface.co/Qwen/Qwen2.5-0.5B">Qwen/Qwen2.5-0.5B</a></td>
+    <td>Lightweight backbone; select via <code>--vla.base_vlm qwen2.5+0.5b</code> or <code>ModelRegistry.EXT_EXP_QWEN2_0P5B</code>.</td>
+  </tr>
 </table>
 
 
