@@ -145,10 +145,11 @@ def load(
         freeze_weights=not load_for_training,
     )
 
+    hidden_dim = vlm.llm_backbone.embed_dim
+
     # Sanity check q_proj dimensions to catch malformed checkpoints early
     try:
         layer = vlm.llm_backbone.llm.model.layers[0].self_attn
-        hidden_dim = vlm.llm_backbone.embed_dim
         if tuple(layer.q_proj.weight.shape) != (hidden_dim, hidden_dim):
             raise ValueError(
                 f"Invalid q_proj weight shape {tuple(layer.q_proj.weight.shape)};"
@@ -160,7 +161,7 @@ def load(
                 f"Invalid q_proj bias shape {tuple(layer.q_proj.bias.shape)};"
                 f" expected ({hidden_dim},). Ensure the checkpoint is not corrupted."
             )
-    except AttributeError:
+    except (AttributeError, NameError):
         pass
 
     # Reinitialize any malformed q_proj layers so training can proceed
@@ -178,7 +179,7 @@ def load(
                 torch.nn.init.kaiming_uniform_(q_proj.weight, a=math.sqrt(5))
                 if q_proj.bias is not None:
                     q_proj.bias.data.zero_()
-    except AttributeError:
+    except (AttributeError, NameError):
         pass
 
     return vlm
