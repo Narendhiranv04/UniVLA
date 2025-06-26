@@ -91,22 +91,31 @@ class DummyFSDP(nn.Module):
         return self.module(*args, **kwargs)
 
 
-def _write_dummy_config(run_dir: Path) -> None:
+def _write_dummy_config(run_dir: Path, *, as_yaml: bool = False) -> None:
     (run_dir / "checkpoints").mkdir(parents=True)
     (run_dir / "checkpoints" / "latest-checkpoint.pt").touch()
-    with open(run_dir / "config.json", "w") as f:
-        json.dump(
-            {
-                "model": {
-                    "model_id": "dummy",
-                    "arch_specifier": "gelu-mlp",
-                    "vision_backbone_id": "dummy-vision",
-                    "llm_backbone_id": "dummy-llm",
-                    "image_resize_strategy": "crop",
-                }
-            },
-            f,
-        )
+    data = {
+        "model": {
+            "model_id": "dummy",
+            "arch_specifier": "gelu-mlp",
+            "vision_backbone_id": "dummy-vision",
+            "llm_backbone_id": "dummy-llm",
+            "image_resize_strategy": "crop",
+        }
+    }
+    if as_yaml:
+        with open(run_dir / "config.yaml", "w") as f:
+            f.write(
+                "model:\n"
+                "  model_id: dummy\n"
+                "  arch_specifier: gelu-mlp\n"
+                "  vision_backbone_id: dummy-vision\n"
+                "  llm_backbone_id: dummy-llm\n"
+                "  image_resize_strategy: crop\n"
+            )
+    else:
+        with open(run_dir / "config.json", "w") as f:
+            json.dump(data, f)
 
 
 def test_load_raises_on_bad_q_proj(monkeypatch, tmp_path):
@@ -145,6 +154,22 @@ def test_load_reinitializes_other_layers(monkeypatch, tmp_path):
         assert tuple(q_proj.weight.shape) == (hidden_dim, hidden_dim)
         if q_proj.bias is not None:
             assert q_proj.bias.numel() == hidden_dim
+
+
+def test_load_accepts_yaml_config(monkeypatch, tmp_path):
+    run_dir = tmp_path / "model"
+    _write_dummy_config(run_dir, as_yaml=True)
+
+    monkeypatch.setattr(load_module, "get_vision_backbone_and_transform", lambda *a, **k: (DummyVisionBackbone(), None))
+    monkeypatch.setattr(load_module, "get_llm_backbone_and_tokenizer", lambda *a, **k: (DummyLLMBackbone(), None))
+    monkeypatch.setattr(
+        load_module.PrismaticVLM,
+        "from_pretrained",
+        classmethod(lambda cls, ckpt, model_id, vision_backbone, llm_backbone, arch_specifier="gelu-mlp", freeze_weights=True: DummyVLM(llm_backbone)),
+    )
+
+    vlm = load_module.load(run_dir)
+    assert isinstance(vlm, DummyVLM)
 
 
 def test_fsdp_setup_repairs_q_proj(monkeypatch, tmp_path):
