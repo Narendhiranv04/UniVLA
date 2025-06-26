@@ -225,8 +225,11 @@ torchrun --standalone --nnodes 1 --nproc-per-node 8 main.py fit \
 
     --hf_token <your_hf_token>  # required for gated models like LLaMA-2
 `--pretrain_vlm` may refer to a local directory containing `config.json` (or
-`config.yaml`) and `checkpoints/latest-checkpoint.pt` or to a registered model name from
-`prismatic.available_model_names()`.
+`config.yaml`) and `checkpoints/latest-checkpoint.pt` or to a registered model
+name from `prismatic.available_model_names()`. The configuration file usually
+contains a top-level `model` section, but run directories generated with
+UniVLA's training scripts instead store `vla.base_vlm`. The loader will now
+infer the model configuration from that field when present.
 
 > [!NOTE]
 > For pretraining UniVLA only on BridgeV2 or Human (Ego4D) data, please modify ```vla.type``` to ```prism-dinosiglip-224px+mx-bridge(human)``` correspondingly. Detailed setups can be found in ```./prismatic/conf/vla.py`. To train solely on the TacoPlay dataset use ```vla.type prism-dinosiglip-224px+mx-taco-play```.

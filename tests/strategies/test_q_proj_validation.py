@@ -118,6 +118,13 @@ def _write_dummy_config(run_dir: Path, *, as_yaml: bool = False) -> None:
             json.dump(data, f)
 
 
+def _write_vla_config(run_dir: Path, base_vlm: str = "dummy") -> None:
+    (run_dir / "checkpoints").mkdir(parents=True)
+    (run_dir / "checkpoints" / "latest-checkpoint.pt").touch()
+    with open(run_dir / "config.json", "w") as f:
+        json.dump({"vla": {"base_vlm": base_vlm}}, f)
+
+
 def test_load_raises_on_bad_q_proj(monkeypatch, tmp_path):
     run_dir = tmp_path / "model"
     _write_dummy_config(run_dir)
@@ -166,6 +173,45 @@ def test_load_accepts_yaml_config(monkeypatch, tmp_path):
         load_module.PrismaticVLM,
         "from_pretrained",
         classmethod(lambda cls, ckpt, model_id, vision_backbone, llm_backbone, arch_specifier="gelu-mlp", freeze_weights=True: DummyVLM(llm_backbone)),
+    )
+
+    vlm = load_module.load(run_dir)
+    assert isinstance(vlm, DummyVLM)
+
+
+def test_load_accepts_vla_config(monkeypatch, tmp_path):
+    run_dir = tmp_path / "model"
+    _write_vla_config(run_dir)
+
+    class DummyModelCfg:
+        def __init__(self):
+            self.model_id = "dummy"
+            self.arch_specifier = "gelu-mlp"
+            self.vision_backbone_id = "dummy-vision"
+            self.llm_backbone_id = "dummy-llm"
+            self.image_resize_strategy = "crop"
+
+    monkeypatch.setattr(
+        load_module.ModelConfig,
+        "get_choice_class",
+        classmethod(lambda cls, name: DummyModelCfg),
+    )
+    monkeypatch.setattr(
+        load_module,
+        "get_vision_backbone_and_transform",
+        lambda *a, **k: (DummyVisionBackbone(), None),
+    )
+    monkeypatch.setattr(
+        load_module,
+        "get_llm_backbone_and_tokenizer",
+        lambda *a, **k: (DummyLLMBackbone(), None),
+    )
+    monkeypatch.setattr(
+        load_module.PrismaticVLM,
+        "from_pretrained",
+        classmethod(
+            lambda cls, ckpt, model_id, vision_backbone, llm_backbone, arch_specifier="gelu-mlp", freeze_weights=True: DummyVLM(llm_backbone)
+        ),
     )
 
     vlm = load_module.load(run_dir)
