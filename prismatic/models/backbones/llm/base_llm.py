@@ -167,6 +167,8 @@ class HFCausalLLMBackbone(LLMBackbone, ABC):
             #       this works well with base LLM generation.
             #   =>> Like Llama-2 Tokenizers -- we'll add a special PAD token for training purposes.
             "phi-2-3b",
+            # Qwen2 Tokenizer mirrors Phi behavior and also omits a BOS token by default
+            "qwen2.5-0.5b",
         }
         if self.identifier in SPECIAL_CASES:
             return
