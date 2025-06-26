@@ -7,6 +7,7 @@ IDs, mappings to paper experiments, and short descriptions), as well as for load
 
 import json
 import os
+from dataclasses import asdict
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -124,7 +125,13 @@ def load(
         if "model" not in cfg_data:
             if "vla" in cfg_data and "base_vlm" in cfg_data["vla"]:
                 try:
+<<<<<<< ntcgs5-codex/fix-missing--model--section-in-config-file
+                    model_cfg = asdict(
+                        ModelConfig.get_choice_class(cfg_data["vla"]["base_vlm"])()
+                    )
+=======
                     model_cfg = ModelConfig.get_choice_class(cfg_data["vla"]["base_vlm"])().__dict__
+>>>>>>> main
                 except Exception as e:
                     raise KeyError(
                         f"'model' section missing from config file {config_file} "
