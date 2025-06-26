@@ -141,6 +141,13 @@ def load(
         else:
             model_cfg = cfg_data["model"]
 
+        # Fill in missing defaults for older config files
+        if "image_resize_strategy" not in model_cfg:
+            overwatch.warning(
+                "'image_resize_strategy' missing from config; defaulting to 'letterbox'"
+            )
+            model_cfg["image_resize_strategy"] = "letterbox"
+
     # = Load Individual Components necessary for Instantiating a VLM =
     #   =>> Print Minimal Config
     overwatch.info(
