@@ -122,8 +122,23 @@ def load(
                 raise ImportError("PyYAML is required to load YAML config files")
             cfg_data = yaml.safe_load(f)
         if "model" not in cfg_data:
-            raise KeyError("'model' section missing from config file")
-        model_cfg = cfg_data["model"]
+            if "vla" in cfg_data and "base_vlm" in cfg_data["vla"]:
+                try:
+                    model_cfg = ModelConfig.get_choice_class(cfg_data["vla"]["base_vlm"])().__dict__
+                except Exception as e:
+                    raise KeyError(
+                        f"'model' section missing from config file {config_file} "
+                        f"and failed to resolve `vla.base_vlm` = {cfg_data['vla']['base_vlm']}."
+                    ) from e
+            else:
+                raise KeyError(
+                    f"'model' section missing from config file {config_file}. "
+                    "Ensure `--pretrain_vlm` points to a valid pretrained model "
+                    "directory containing this section or use a name from "
+                    "`prismatic.available_model_names()`."
+                )
+        else:
+            model_cfg = cfg_data["model"]
 
     # = Load Individual Components necessary for Instantiating a VLM =
     #   =>> Print Minimal Config
