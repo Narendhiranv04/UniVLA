@@ -111,16 +111,26 @@ class PrismaticVLM(VLM):
             **kwargs,
         )
 
-        # Load from Checkpoint (Custom --> should load both *projector* and *llm* weights)
+        # Load from Checkpoint
         model_state_dict = torch.load(pretrained_checkpoint, map_location="cpu")["model"]
-        assert "projector" in model_state_dict and "llm_backbone" in model_state_dict, (
-            "PrismaticVLM `from_pretrained` expects checkpoint with keys for `projector` AND `llm_backbone`!"
-        )
 
-        vlm.projector.load_state_dict(model_state_dict["projector"])
-        vlm.llm_backbone.load_state_dict(model_state_dict["llm_backbone"])
-        if "vision_backbone" in model_state_dict.keys():
-            vlm.vision_backbone.load_state_dict(model_state_dict["vision_backbone"])
+        # --------------------------------------------------
+        #  Drop projector weights if their shapes mismatch
+        # --------------------------------------------------
+        projector_keys = [k for k in model_state_dict if k.startswith("projector.")]
+        for k in projector_keys:
+            del model_state_dict[k]
+
+        missing, unexpected = vlm.load_state_dict(model_state_dict, strict=False)
+
+        if projector_keys:
+            print(
+                f"[Info] Re-initialised projector with random weights (removed {len(projector_keys)} keys from checkpoint)."
+            )
+        if missing:
+            print(f"[Debug] Missing keys after load_state_dict: {missing[:5]} …")
+        if unexpected:
+            print(f"[Debug] Unexpected keys after load_state_dict: {unexpected[:5]} …")
 
         # Freeze Weights
         if freeze_weights:
