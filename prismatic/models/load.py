@@ -10,6 +10,11 @@ import os
 from pathlib import Path
 from typing import List, Optional, Union
 
+try:
+    import yaml
+except Exception:  # pragma: no cover - PyYAML optional
+    yaml = None
+
 import math
 import torch
 
@@ -62,13 +67,14 @@ def load(
     if os.path.isdir(model_id_or_path):
         overwatch.info(f"Loading from local path `{(run_dir := Path(model_id_or_path))}`")
 
-        # Get paths for `config.json` and pretrained checkpoint
-        config_json, checkpoint_pt = run_dir / "config.json", run_dir / "checkpoints" / "latest-checkpoint.pt"
+        # Get paths for config file (json or yaml) and pretrained checkpoint
+        config_json, config_yaml = run_dir / "config.json", run_dir / "config.yaml"
+        checkpoint_pt = run_dir / "checkpoints" / "latest-checkpoint.pt"
 
-        if not (config_json.exists() and checkpoint_pt.exists()):
+        if not (checkpoint_pt.exists() and (config_json.exists() or config_yaml.exists())):
             # Directory exists but missing expected files -> fall back to HF Hub if possible
             if model_id_or_path not in GLOBAL_REGISTRY:
-                raise AssertionError(f"Missing `config.json` for `{run_dir = }`")
+                raise AssertionError(f"Missing `config.json` or `config.yaml` for `{run_dir = }`")
 
             overwatch.info(f"Local path `{run_dir}` missing files; falling back to HF Hub entry `{model_id_or_path}`")
             with overwatch.local_zero_first():
@@ -85,6 +91,8 @@ def load(
                     cache_dir=cache_dir,
                     token=hf_token,
                 )
+        # Determine which config file to load
+        config_file = config_json if config_json.exists() else config_yaml
     else:
         if model_id_or_path not in GLOBAL_REGISTRY:
             raise ValueError(f"Couldn't find `{model_id_or_path = }; check `prismatic.available_model_names()`")
@@ -103,10 +111,19 @@ def load(
                 cache_dir=cache_dir,
                 token=hf_token,
             )
+        config_file = config_json
 
-    # Load Model Config from `config.json`
-    with open(config_json, "r") as f:
-        model_cfg = json.load(f)["model"]
+    # Load Model Config
+    with open(config_file, "r") as f:
+        if config_file.suffix == ".json":
+            cfg_data = json.load(f)
+        else:
+            if yaml is None:
+                raise ImportError("PyYAML is required to load YAML config files")
+            cfg_data = yaml.safe_load(f)
+        if "model" not in cfg_data:
+            raise KeyError("'model' section missing from config file")
+        model_cfg = cfg_data["model"]
 
     # = Load Individual Components necessary for Instantiating a VLM =
     #   =>> Print Minimal Config
