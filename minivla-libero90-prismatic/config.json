@@ -1,0 +1,9 @@
+{
+  "model": {
+    "model_id": "qwen2.5+0.5b",
+    "arch_specifier": "no-align+gelu-mlp",
+    "vision_backbone_id": "clip-vit-l-336px",
+    "llm_backbone_id": "qwen2.5-0.5b",
+    "image_resize_strategy": "letterbox"
+  }
+}
