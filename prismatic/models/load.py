@@ -125,13 +125,7 @@ def load(
         if "model" not in cfg_data:
             if "vla" in cfg_data and "base_vlm" in cfg_data["vla"]:
                 try:
-<<<<<<< ntcgs5-codex/fix-missing--model--section-in-config-file
-                    model_cfg = asdict(
-                        ModelConfig.get_choice_class(cfg_data["vla"]["base_vlm"])()
-                    )
-=======
-                    model_cfg = ModelConfig.get_choice_class(cfg_data["vla"]["base_vlm"])().__dict__
->>>>>>> main
+                    model_cfg = asdict(ModelConfig.get_choice_class(cfg_data["vla"]["base_vlm"] )())
                 except Exception as e:
                     raise KeyError(
                         f"'model' section missing from config file {config_file} "
