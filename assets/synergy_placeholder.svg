@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Synergy placeholder artwork</title>
+  <desc id="desc">Abstract gradient artwork used as a placeholder for the Synergy project image.</desc>
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e90ff"/>
+      <stop offset="50%" stop-color="#7a5cdb"/>
+      <stop offset="100%" stop-color="#f468b7"/>
+    </linearGradient>
+    <linearGradient id="overlay" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.6)"/>
+      <stop offset="50%" stop-color="rgba(255,255,255,0.2)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#gradient)" rx="56" ry="56"/>
+  <rect width="1200" height="900" fill="url(#overlay)" opacity="0.45" rx="56" ry="56"/>
+  <g fill="#ffffff" font-family="'Poppins', 'Segoe UI', sans-serif" text-anchor="middle">
+    <text x="50%" y="52%" font-size="96" font-weight="700" letter-spacing="4">SYNERGY</text>
+    <text x="50%" y="63%" font-size="42" font-weight="300" letter-spacing="4">Team Showcases</text>
+  </g>
+</svg>

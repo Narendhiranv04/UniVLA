@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Flagship Projects – Autonomous UAS</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="page__header">
+        <p class="page__eyebrow">Systems Lead · Aerial Robotics</p>
+        <h1 class="page__title">Flagship Projects</h1>
+      </header>
+      <section class="project" aria-labelledby="project-title">
+        <div class="project__media" data-gallery>
+          <figure class="project__frame project__frame--primary">
+            <img src="../../assets/teaser_univla.png" alt="Autonomous UAS quadcopter simulation collage" loading="lazy" />
+          </figure>
+          <figure class="project__frame project__frame--secondary" aria-hidden="true">
+            <img src="../../assets/real-world-exp_1.png" alt="Competition team celebrating podium finish" loading="lazy" />
+          </figure>
+          <figure class="project__frame project__frame--secondary" aria-hidden="true">
+            <img src="../../assets/synergy_placeholder.svg" alt="Synergy showcase team photo" loading="lazy" />
+          </figure>
+        </div>
+        <article class="project__details">
+          <div class="project__meta">
+            <p class="project__scope">Aerial Robotics · Systems Lead</p>
+            <h2 id="project-title" class="project__title">Autonomous UAS</h2>
+          </div>
+          <p class="project__summary">
+            Led the systems team delivering a competition-ready quadcopter with full autonomy stack, perception, and safety interlocks.
+          </p>
+          <dl class="project__tags">
+            <div class="project__tags-row">
+              <dt>Stage</dt>
+              <dd>SAE AeroTHON · 2024</dd>
+            </div>
+            <div class="project__tags-row">
+              <dt>Stack</dt>
+              <dd>ROS 2 · PX4 Autopilot · OpenCV · Raspberry Pi</dd>
+            </div>
+          </dl>
+          <button class="project__toggle" type="button" data-toggle aria-expanded="false">
+            <span class="project__toggle-label" data-toggle-label>Expand gallery</span>
+            <span class="project__toggle-icon" aria-hidden="true"></span>
+          </button>
+          <footer class="project__cta">
+            <a class="project__cta-button" href="#flight-log">Read the flight log</a>
+          </footer>
+        </article>
+      </section>
+    </main>
+    <script src="./media-gallery.js"></script>
+  </body>
+</html>
